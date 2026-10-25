@@ -1,0 +1,5 @@
+AreaROCS-package        A short title line describing what the package
+                        does
+arocs_kernel            Kernel density estimator of the area of the ROC
+                        surface
+arocs_kernel_integral   Integrated kernel plug-in estimator of AROCS

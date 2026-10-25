@@ -1,0 +1,138 @@
+"0","arocs_kernel_integral
+"
+"1","function(X1, X2, X3,
+"
+"1","    kernel_type = c(""gauss"", ""epan""), bwd, na.rm = FALSE,
+"
+"1","    n_grid = 257L, max_grid = 4097L, rel.tol = 1e-4, abs.tol = 1e-6,
+"
+"1","    tail_prob = 1e-10, details = FALSE) {
+"
+"1","  kernel_type <- match.arg(kernel_type)
+"
+"1","  flag <- function(x) is.logical(x) && length(x) == 1L && !is.na(x)
+"
+"1","  scalar <- function(x) is.numeric(x) && length(x) == 1L && is.finite(x)
+"
+"1","  if (!flag(na.rm) || !flag(details)) stop(""'na.rm' and 'details' must be logical scalars."")
+"
+"1","  if (!is.numeric(bwd) || !is.null(dim(bwd)) ||
+"
+"1","      !(length(bwd) %in% c(1L, 3L)) || any(!is.finite(bwd)) || any(bwd <= 0))
+"
+"1","    stop(""'bwd' must contain one or three positive finite bandwidths."")
+"
+"1","  bwd <- rep(bwd, length.out = 3L)
+"
+"1","  if (!scalar(n_grid) || n_grid < 3 || n_grid != floor(n_grid) ||
+"
+"1","      !scalar(max_grid) || max_grid < 2*n_grid-1 || max_grid != floor(max_grid))
+"
+"1","    stop(""Grid sizes must be integers with n_grid >= 3 and max_grid >= 2*n_grid-1."")
+"
+"1","  if (!scalar(rel.tol) || rel.tol < 0 || !scalar(abs.tol) || abs.tol < 0 ||
+"
+"1","      max(rel.tol, abs.tol) == 0) stop(""Invalid quadrature tolerances."")
+"
+"1","  if (!scalar(tail_prob) || tail_prob <= 0 || tail_prob >= 1)
+"
+"1","    stop(""'tail_prob' must be between zero and one."")
+"
+"1","  samples <- list(X1, X2, X3)
+"
+"1","  for (k in seq_along(samples)) {
+"
+"1","    x <- samples[[k]]
+"
+"1","    if (!is.numeric(x) || !is.null(dim(x)) || !length(x) || any(is.infinite(x)))
+"
+"1","      stop(""Samples must be nonempty numeric vectors without infinite values."")
+"
+"1","    if (na.rm) x <- x[!is.na(x)]
+"
+"1","    if (!length(x)) stop(""A sample is empty after removing missing values."")
+"
+"1","    samples[[k]] <- x
+"
+"1","  }
+"
+"1","  if (any(vapply(samples, anyNA, logical(1)))) return(NA_real_)
+"
+"1","  # Standardize all groups together to keep density products on a safe scale.
+"
+"1","  center <- median(unlist(samples, use.names = FALSE))
+"
+"1","  unit <- max(c(vapply(samples, function(x) max(abs(x-center)), numeric(1)), bwd))
+"
+"1","  if (!is.finite(unit)) stop(""Data range is too large; rescale the observations."")
+"
+"1","  samples <- lapply(samples, function(x) (x-center)/unit)
+"
+"1","  h <- bwd/unit
+"
+"1","  if (any(!is.finite(h)) || any(h <= 0))
+"
+"1","    stop(""Bandwidths are too small relative to the data range; rescale inputs."")
+"
+"1","  radius <- if (kernel_type == ""gauss"") qnorm(tail_prob/2, lower.tail = FALSE) else 1
+"
+"1","  lo <- min(vapply(samples, min, numeric(1)) - radius*h)
+"
+"1","  hi <- max(vapply(samples, max, numeric(1)) + radius*h)
+"
+"1","  evaluate <- function(n) {
+"
+"1","    grid <- seq(lo, hi, length.out = n)
+"
+"1","    f <- lapply(seq_len(3), function(k) pdf_kernel(grid, samples[[k]], kernel_type, h[k]))
+"
+"1","    if (any(!is.finite(unlist(f)))) stop(""Nonfinite KDE values; check bandwidths."")
+"
+"1","    arocs_integral_grid_C(f[[1]], f[[2]], f[[3]], (hi-lo)/(n-1))
+"
+"1","  }
+"
+"1","  estimate <- evaluate(n_grid)
+"
+"1","  difference <- Inf
+"
+"1","  converged <- FALSE
+"
+"1","  while (2*n_grid-1 <= max_grid) {
+"
+"1","    n_grid <- 2*n_grid-1
+"
+"1","    updated <- evaluate(n_grid)
+"
+"1","    difference <- abs(updated-estimate)
+"
+"1","    estimate <- updated
+"
+"1","    if (difference <= max(abs.tol, rel.tol*abs(estimate))) {
+"
+"1","      converged <- TRUE
+"
+"1","      break
+"
+"1","    }
+"
+"1","  }
+"
+"1","  if (!converged) warning(""Quadrature did not converge; increase 'max_grid' and inspect 'details'."")
+"
+"1","  if (!details) return(estimate)
+"
+"1","  list(estimate = estimate, grid_difference = difference, n_grid = n_grid,
+"
+"1","       bounds = c(lo, hi)*unit + center,
+"
+"1","       tail_bound = if (kernel_type == ""gauss"") 6*tail_prob else 0,
+"
+"1","       converged = converged, bwd = bwd)
+"
+"1","}
+"
+"1","<bytecode: 0x000001a64d1f2280>
+"
+"1","<environment: namespace:AreaROCS>
+"

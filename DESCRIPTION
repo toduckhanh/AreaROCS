@@ -1,0 +1,18 @@
+Package: AreaROCS
+Type: Package
+Title: Statistical inference for Area of the ROC surface
+Version: 0.0.1
+Date: 2026-10-25
+Author: Duc-Khanh To [aut, cre] (<https://orcid.org/0000-0002-4641-0764>)
+Maintainer: Duc-Khanh To <tdkhanh@hcmus.edu.vn>
+Description: This package provides a estimation frameworks for area of ROC surface.
+Depends: R (>= 3.5.0), stats, utils, graphics, Rcpp (>= 0.12.3)
+LinkingTo: Rcpp, RcppArmadillo
+Encoding: UTF-8
+LazyData: true
+LazyLoad: yes
+ByteCompile: yes
+NeedsCompilation: yes
+URL: https://github.com/toduckhanh/AreaROCS
+BugReports: https://github.com/toduckhanh/AreaROCS/issues
+Config/roxygen2/version: 8.1.0

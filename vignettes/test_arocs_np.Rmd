@@ -1,0 +1,114 @@
+---
+title: "Guide for Kernel estimator of AROCS"
+author: "Duc-Khanh To"
+date: '`r Sys.Date()`'
+vignette: >
+  %\VignetteIndexEntry{Guide for Kernel estimator of AROCS}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+output: html_document
+---
+
+# Simulation data
+
+```{r setup}
+library(AreaROCS)
+set.seed(25102026)
+```
+
+The empirical-pair estimator `arocs_kernel()` implements (3.1). The new
+`arocs_kernel_integral()` instead integrates the three fitted KDEs over
+`x < y`, using the ratio-free integrand
+
+\[
+\sqrt{[\hat f_1(x)\hat f_3(y)]^2 +
+       [\hat f_2(x)\hat f_3(y)]^2 +
+       [\hat f_1(x)\hat f_2(y)]^2}.
+\]
+
+This includes regions between and beyond observed values and avoids density
+division. It still has smoothing bias; check bandwidth sensitivity rather than
+assuming integration guarantees valid confidence intervals.
+
+## Tri-Normal data
+Setup parameters
+```{r}
+mu_true_1 <- c(0, 1, 2) # c(0, 1, 2)
+sigma_true_1 <- sqrt(c(1, 1.5, 1)) # sqrt(c(1, 2, 1))
+```
+
+```{r}
+arocs_true_1 <- arocs_normal(mu = mu_true_1, sigma = sigma_true_1)
+arocs_true_1
+```
+
+```{r}
+n1 <- n2 <- n3 <- 50
+```
+
+```{r}
+test <- sapply(1:1000, function(i){
+  X1 <- rnorm(n1, mean = mu_true_1[1], sd = sigma_true_1[1])
+  X2 <- rnorm(n2, mean = mu_true_1[2], sd = sigma_true_1[2])
+  X3 <- rnorm(n3, mean = mu_true_1[3], sd = sigma_true_1[3])
+  ##
+  mu_est <- c(mean(X1), mean(X2), mean(X3))
+  sigma_est <- c(sd(X1), sd(X2), sd(X3))
+  res_norm <- arocs_normal(mu = mu_est, sigma = sigma_est)
+  ##
+  h1 <- bw.nrd0(X1)
+  h2 <- bw.nrd0(X2)
+  h3 <- bw.nrd0(X3)
+  res_np <- arocs_kernel(X1, X2, X3, kernel_type = "gauss", bwd = c(h1, h2, h3))
+  res_integral <- arocs_kernel_integral(X1, X2, X3,
+                                        kernel_type = "gauss", 
+                                        bwd = c(h1, h2, h3))
+  return(c(res_norm = res_norm, res_np = res_np, res_integral = res_integral))
+})
+```
+
+```{r}
+rowMeans(test)
+```
+
+```{r}
+rowMeans(test) - arocs_true_1
+```
+
+```{r}
+apply(test, 1, sd)
+```
+
+This diagnostic uses the across-replication SD (an oracle SD unavailable from a single sample). It measures bias relative to sampling spread; it is **not** coverage of a feasible per-sample confidence interval.
+
+```{r}
+oracle_sd_coverage <- apply(test, 1, function(x)
+  mean(abs(x - arocs_true_1)/sd(x) <= qnorm(0.975)))
+oracle_sd_coverage
+```
+
+For reproducible bias/RMSE comparisons and genuine bootstrap coverage, run `vignettes/compare_arocs_estimators.R` from the package root. Its optional bootstrap simulation resamples all three groups independently, recalculates bandwidths, and constructs both percentile and basic intervals separately for each simulated data set. Increase both replication counts for final studies.
+
+```{r bootstrap-study, eval=FALSE}
+Sys.setenv(AROCS_MC_REPS = 1000, AROCS_BOOT_MC = 1000,
+           AROCS_BOOT_REPS = 999)
+source("vignettes/compare_arocs_estimators.R")
+```
+
+## NOT RUN
+```{r eval=FALSE}
+set.seed(2510)
+X1 <- rnorm(n1, mean = mu_true_1[1], sd = sigma_true_1[1])
+X2 <- rnorm(n2, mean = mu_true_1[2], sd = sigma_true_1[2])
+X3 <- rnorm(n3, mean = mu_true_1[3], sd = sigma_true_1[3])
+```
+
+```{r eval=FALSE}
+h1 <- bw.nrd0(X1)
+h2 <- bw.nrd0(X2)
+h3 <- bw.nrd0(X3)
+```
+
+```{r eval=FALSE}
+arocs_kernel(X1, X2, X3, kernel_type = "gauss", bwd = c(h1, h2, h3))
+```
