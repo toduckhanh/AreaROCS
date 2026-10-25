@@ -16,9 +16,7 @@ library(AreaROCS)
 set.seed(25102026)
 ```
 
-The empirical-pair estimator `arocs_kernel()` implements (3.1). The new
-`arocs_kernel_integral()` instead integrates the three fitted KDEs over
-`x < y`, using the ratio-free integrand
+The empirical-pair estimator `arocs_kernel()` implements (3.1). The new `arocs_kernel_integral()` instead integrates the three fitted KDEs over `x < y`, using the ratio-free integrand
 
 \[
 \sqrt{[\hat f_1(x)\hat f_3(y)]^2 +
@@ -33,8 +31,8 @@ assuming integration guarantees valid confidence intervals.
 ## Tri-Normal data
 Setup parameters
 ```{r}
-mu_true_1 <- c(0, 1, 2) # c(0, 1, 2)
-sigma_true_1 <- sqrt(c(1, 1.5, 1)) # sqrt(c(1, 2, 1))
+mu_true_1 <- c(0, 1, 2)
+sigma_true_1 <- sqrt(c(1, 1, 1)) # sqrt(c(1, 1.5, 1))
 ```
 
 ```{r}

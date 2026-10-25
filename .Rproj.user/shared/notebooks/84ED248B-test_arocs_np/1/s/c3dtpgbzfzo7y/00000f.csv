@@ -1,12 +1,14 @@
-"0","oracle_sd_coverage
+"0","oracle_sd_coverage <- apply(test, 1, function(x)
+  mean(abs(x - arocs_true_1)/sd(x) <= qnorm(0.975)))
+oracle_sd_coverage
 "
 "1","    res_norm "
 "1","      res_np "
 "1","res_integral "
 "1","
 "
-"1","       0.948 "
-"1","       0.683 "
-"1","       0.934 "
+"1","       0.950 "
+"1","       0.784 "
+"1","       0.945 "
 "1","
 "
